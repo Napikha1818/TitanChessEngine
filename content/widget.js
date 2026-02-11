@@ -469,7 +469,7 @@
                     const panel = widget.querySelector('#widget-advanced');
                     if (panel) panel.style.display = 'block';
                 } else if (tool === 'upgrade') {
-                    window.open('https://titanchess.store', '_blank');
+                    window.open('https://titanchess.online', '_blank');
                 }
             });
         });
@@ -564,7 +564,7 @@
 
         // upgrade link in info tab
         const upgradeLink = widget.querySelector('#info-upgrade-link');
-        if (upgradeLink) upgradeLink.addEventListener('click', () => window.open('https://titanchess.store', '_blank'));
+        if (upgradeLink) upgradeLink.addEventListener('click', () => window.open('https://titanchess.online', '_blank'));
     }
 
     // restore saved preferences from chrome.storage.

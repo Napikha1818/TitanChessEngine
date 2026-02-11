@@ -16,6 +16,6 @@
 
     // Upgrade button
     document.getElementById('upgradeBtn').addEventListener('click', () => {
-        chrome.tabs.create({ url: 'https://titanchess.store' });
+        chrome.tabs.create({ url: 'https://titanchess.online' });
     });
 })();

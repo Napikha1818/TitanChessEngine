@@ -158,7 +158,7 @@ The codebase is modular and well-commented. Each file has a block header explain
 | Account System | ❌ | ✅ (license-based) |
 | Server Required | No | Yes (VPS backend) |
 
-Interested in Premium? Visit [titanchess.store](https://titanchess.store).
+Interested in Premium? Visit [titanchess.online](https://titanchess.online).
 
 ## Tech Stack
 
