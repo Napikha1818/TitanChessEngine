@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+    <div class="popup-container">
+        <div class="popup-header">
+            <div class="popup-title">TITAN CHESS</div>
+            <div class="popup-subtitle">FREE CHESS ANALYZER</div>
+        </div>
+
+        <div class="popup-status">
+            <span class="popup-dot" id="statusDot"></span>
+            <span class="popup-status-text" id="statusText">Stockfish Engine Ready</span>
+        </div>
+
+        <div class="popup-info">
+            <div class="popup-row">
+                <span class="popup-label">ENGINE</span>
+                <span class="popup-value">STOCKFISH (LOCAL)</span>
+            </div>
+            <div class="popup-row">
+                <span class="popup-label">ELO RANGE</span>
+                <span class="popup-value">1000 - 1900</span>
+            </div>
+            <div class="popup-row">
+                <span class="popup-label">CURRENT ELO</span>
+                <span class="popup-value" id="currentElo">1000 (BRONZE)</span>
+            </div>
+            <div class="popup-row">
+                <span class="popup-label">TIER</span>
+                <span class="popup-value popup-free">FREE</span>
+            </div>
+        </div>
+
+        <div class="popup-tip">Open chess.com to use the overlay widget</div>
+
+        <div class="popup-upgrade">
+            <div class="popup-upgrade-text">⭐ Unlock ELO 2500, Eval Bar, Titan_Chess Engines & more</div>
+            <button class="popup-upgrade-btn" id="upgradeBtn">UPGRADE TO PREMIUM</button>
+        </div>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+</html>
