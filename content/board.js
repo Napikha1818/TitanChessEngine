@@ -95,9 +95,10 @@
     // if a white piece sits on a highlighted square, white just moved,
     // so it's black's turn. not perfect but works 99% of the time.
     function getFen() {
-        const board = findBoard();
-        if (!board) return null;
-        let pos = new Array(64).fill(null);
+        try {
+            const board = findBoard();
+            if (!board) return null;
+            let pos = new Array(64).fill(null);
 
         board.querySelectorAll('.piece').forEach(p => {
             const cls = Array.from(p.classList);
@@ -157,6 +158,10 @@
         // we can't reliably detect them from the DOM alone.
         // stockfish handles this fine for move suggestions.
         return `${fen} ${turn} KQkq - 0 1`;
+        } catch (err) {
+            console.error('[TitanFree] getFen error', err);
+            return null;
+        }
     }
 
     // convert algebraic notation (e.g. 'e4') to screen pixel coords.

@@ -64,43 +64,54 @@
 
     // core polling loop — called every 100ms.
     // reads the board state and decides what to do.
+    // wrapped in try/catch so a DOM error doesn't kill the loop.
     function monitor() {
-        const fen = B.getFen(), rect = B.getBoardRect();
-        if (!fen || !rect) return;
+        try {
+            const fen = B.getFen(), rect = B.getBoardRect();
+            if (!fen || !rect) return;
 
-        const isStart = fen.includes('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR');
-        const wasNotStart = T.previousFen && !T.previousFen.includes('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR');
+            const isStart = fen.includes('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR');
+            const wasNotStart = T.previousFen && !T.previousFen.includes('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR');
 
-        // new game: starting position appeared after a non-starting position.
-        // reset everything and re-attach to the (possibly new) board element.
-        if (isStart && wasNotStart) {
-            if (T.boardObserver) { T.boardObserver.disconnect(); T.boardObserver = null; }
-            T.boardElement = T.boardCache = T.playerColor = T.myTurnColor = null;
-            T.moveQueue = [];
-            W.updateQueueDisplay();
-            D.clearArrows();
-            setup();
-        }
+            // new game: starting position appeared after a non-starting position.
+            // reset everything and re-attach to the (possibly new) board element.
+            if (isStart && wasNotStart) {
+                if (T.boardObserver) { T.boardObserver.disconnect(); T.boardObserver = null; }
+                T.boardElement = T.boardCache = T.playerColor = T.myTurnColor = null;
+                T.moveQueue = [];
+                T.pendingArrows = [];
+                W.updateQueueDisplay();
+                D.clearArrows();
+                setup();
+            }
 
-        const turn = fen.split(' ')[1] || 'w';
-        T.myTurnColor = B.getPlayerColor();
+            const turn = fen.split(' ')[1] || 'w';
+            T.myTurnColor = B.getPlayerColor();
+            const isMyTurn = (turn === T.myTurnColor);
 
-        // clear stale arrows when it's not our turn
-        if (turn !== T.myTurnColor && T.arrows.length > 0) D.clearArrows();
+            // opponent's turn — clear arrows so they don't linger
+            if (!isMyTurn && T.arrows.length > 0) {
+                D.clearArrows();
+            }
 
-        // position changed — decide whether to analyze
-        if (T.queueMode && fen !== T.currentFen && turn !== T.myTurnColor) {
-            // queue mode: pre-analyze during opponent's turn at reduced depth
-            T.currentFen = T.previousFen = fen;
-            Eng.preAnalyze(fen);
-        } else if (fen !== T.currentFen && turn === T.myTurnColor) {
-            // our turn and position changed: run full analysis
-            T.currentFen = T.previousFen = fen;
-            Eng.analyze(fen);
-        } else if (fen !== T.currentFen) {
-            // position changed but not our turn and no queue mode:
-            // just track the FEN without analyzing
-            T.currentFen = T.previousFen = fen;
+            // position changed — analyze immediately regardless of turn.
+            // this way the result is ready the instant it becomes our turn.
+            if (fen !== T.currentFen) {
+                T.currentFen = T.previousFen = fen;
+                T.pendingArrows = []; // clear stale pending from previous position
+                D.clearArrows();
+                Eng.analyze(fen);
+            }
+
+            // if it's our turn and we have a pending move from pre-analysis,
+            // make sure the arrow is visible (redraw if needed)
+            if (isMyTurn && T.pendingArrows.length > 0 && T.arrows.length === 0) {
+                T.arrows = [...T.pendingArrows];
+                T.forceRedraw = true;
+                D.draw(true);
+            }
+        } catch (err) {
+            console.error('[TitanFree] monitor error', err);
         }
     }
 
@@ -127,9 +138,10 @@
     // CLEAR_ARROWS to manually wipe arrows, and SET_ARROW_COLOR
     // for color changes from the popup UI.
     chrome.runtime.onMessage.addListener((msg) => {
-        if (msg.type === 'SET_ELO') Eng.setElo(msg.elo);
+        if (!msg || typeof msg.type !== 'string') return true;
+        if (msg.type === 'SET_ELO' && msg.elo) Eng.setElo(msg.elo);
         else if (msg.type === 'CLEAR_ARROWS') D.clearArrows();
-        else if (msg.type === 'SET_ARROW_COLOR') {
+        else if (msg.type === 'SET_ARROW_COLOR' && msg.color) {
             T.arrowColor = msg.color;
             chrome.storage.local.set({ arrowColor: msg.color });
             if (T.arrows.length) D.draw(true);
@@ -143,7 +155,7 @@
     chrome.storage.local.get(['arrowColor', 'elo', 'arrowMode'], (r) => {
         if (r.arrowColor) T.arrowColor = r.arrowColor;
         if (r.arrowMode) T.arrowMode = r.arrowMode;
-        if (r.elo && parseInt(r.elo) <= 1900) T.currentElo = r.elo;
+        if (r.elo) T.currentElo = r.elo;
         Eng.initEngine();
     });
 

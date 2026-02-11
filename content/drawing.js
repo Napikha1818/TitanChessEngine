@@ -112,40 +112,38 @@
 
     // main render function — called from the monitor loop and on resize.
     // clears the canvas and redraws all active arrows.
-    // won't draw anything if it's not our turn (prevents stale arrows).
+    // arrows always visible regardless of whose turn it is.
+    // wrapped in try/catch so a corrupted rect doesn't crash rendering.
     function draw(force) {
         if (!T.ctx || !T.canvas) return;
-        const rect = B.getBoardRect(force || T.forceRedraw);
-        if (!rect || !T.arrows.length) { T.ctx.clearRect(0, 0, T.canvas.width, T.canvas.height); return; }
+        try {
+            const rect = B.getBoardRect(force || T.forceRedraw);
+            if (!rect || !T.arrows.length) { T.ctx.clearRect(0, 0, T.canvas.width, T.canvas.height); return; }
 
-        // don't show arrows on opponent's turn
-        const fen = B.getFen();
-        if (fen && T.myTurnColor) {
-            const turn = fen.split(' ')[1] || 'w';
-            if (turn !== T.myTurnColor) { T.ctx.clearRect(0, 0, T.canvas.width, T.canvas.height); return; }
-        }
-
-        if (force || T.forceRedraw) {
-            T.forceRedraw = false;
-            if (rect.width < 200 || rect.height < 200) return; // board too small, skip
-            T.ctx.clearRect(0, 0, T.canvas.width, T.canvas.height);
-            T.ctx.save();
-            T.ctx.beginPath(); T.ctx.rect(rect.x, rect.y, rect.width, rect.height); T.ctx.clip();
-            T.arrows.forEach(a => {
-                if (!a || !a.move || a.move.length < 4) return;
-                const from = a.move.substring(0, 2), to = a.move.substring(2, 4);
-                const col = T.arrowColor || '#00f2ff';
-                const w = Math.max(8, rect.width / 600 * 12);
-                if (T.arrowMode === 'highlight') drawHighlight(from, to, rect, col);
-                else if (isKnightMove(from, to)) drawKnightArrow(from, to, rect, col, w);
-                else drawArrowShape(from, to, rect, col, w);
-            });
-            T.ctx.restore();
+            if (force || T.forceRedraw) {
+                T.forceRedraw = false;
+                if (rect.width < 200 || rect.height < 200) return; // board too small, skip
+                T.ctx.clearRect(0, 0, T.canvas.width, T.canvas.height);
+                T.ctx.save();
+                T.ctx.beginPath(); T.ctx.rect(rect.x, rect.y, rect.width, rect.height); T.ctx.clip();
+                T.arrows.forEach(a => {
+                    if (!a || !a.move || a.move.length < 4) return;
+                    const from = a.move.substring(0, 2), to = a.move.substring(2, 4);
+                    const col = T.arrowColor || '#00f2ff';
+                    const w = Math.max(8, rect.width / 600 * 12);
+                    if (T.arrowMode === 'highlight') drawHighlight(from, to, rect, col);
+                    else if (isKnightMove(from, to)) drawKnightArrow(from, to, rect, col, w);
+                    else drawArrowShape(from, to, rect, col, w);
+                });
+                T.ctx.restore();
+            }
+        } catch (err) {
+            console.error('[TitanFree] draw error', err);
         }
     }
 
     function clearArrows() {
-        T.arrows = []; T.pendingArrows = [];
+        T.arrows = [];
         if (T.ctx && T.canvas) T.ctx.clearRect(0, 0, T.canvas.width, T.canvas.height);
     }
 

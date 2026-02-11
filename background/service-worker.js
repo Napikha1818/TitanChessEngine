@@ -4,7 +4,7 @@ let arrowColor = '#00f2ff';
 
 // Load settings
 chrome.storage.local.get(['elo', 'arrowMode', 'arrowColor'], (result) => {
-    if (result.elo && parseInt(result.elo) <= 1500) {
+    if (result.elo) {
         currentElo = result.elo;
     }
     if (result.arrowMode) {
@@ -17,7 +17,8 @@ chrome.storage.local.get(['elo', 'arrowMode', 'arrowColor'], (result) => {
 
 // Message handler
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-    if (msg.type === 'SET_ELO') {
+    if (!msg || typeof msg.type !== 'string') return true;
+    if (msg.type === 'SET_ELO' && msg.elo) {
         currentElo = msg.elo;
         chrome.storage.local.set({ elo: msg.elo });
         chrome.tabs.query({ url: '*://www.chess.com/*' }, (tabs) => {

@@ -146,7 +146,7 @@
                                     <div class="info-row"><div class="info-label">ENGINE</div><div class="info-value highlight">STOCKFISH (LOCAL)</div></div>
                                     <div class="info-row"><div class="info-label">STATUS</div><div class="info-value" id="info-status"><span class="status-dot connected"></span><span class="status-text">Connected</span></div></div>
                                     <div class="info-row"><div class="info-label">CURRENT ELO</div><div class="info-value highlight" id="info-elo">1000</div></div>
-                                    <div class="info-row"><div class="info-label">ELO RANGE</div><div class="info-value">1000 — 1900</div></div>
+                                    <div class="info-row"><div class="info-label">ELO RANGE</div><div class="info-value">1000 — 3000</div></div>
                                 </div>
                             </div>
                             <div class="info-section">
@@ -575,8 +575,8 @@
             const widget = document.getElementById('titan-widget');
             if (!widget) return;
 
-            // restore elo level (capped at 1900 for free version)
-            if (result.elo && parseInt(result.elo) <= 1900) {
+            // restore elo level
+            if (result.elo) {
                 const idx = Eng.ELO_LEVELS.indexOf(parseInt(result.elo));
                 if (idx !== -1) {
                     currentEloIndex = idx;
