@@ -42,7 +42,7 @@
         boards.forEach(b => {
             const rect = b.getBoundingClientRect();
             const size = rect.width * rect.height;
-            if (size > maxSize && rect.width > 200 && rect.height > 200) { maxSize = size; mainBoard = b; }
+            if (size > maxSize && rect.width > 100 && rect.height > 100) { maxSize = size; mainBoard = b; }
         });
         return T.boardElement = mainBoard;
     }

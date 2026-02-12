@@ -122,7 +122,7 @@
 
             if (force || T.forceRedraw) {
                 T.forceRedraw = false;
-                if (rect.width < 200 || rect.height < 200) return; // board too small, skip
+                if (rect.width < 100 || rect.height < 100) return; // board too small, skip
                 T.ctx.clearRect(0, 0, T.canvas.width, T.canvas.height);
                 T.ctx.save();
                 T.ctx.beginPath(); T.ctx.rect(rect.x, rect.y, rect.width, rect.height); T.ctx.clip();
@@ -130,7 +130,11 @@
                     if (!a || !a.move || a.move.length < 4) return;
                     const from = a.move.substring(0, 2), to = a.move.substring(2, 4);
                     const col = T.arrowColor || '#00f2ff';
-                    const w = Math.max(8, rect.width / 600 * 12);
+                    // scale arrow width relative to square size so it
+                    // looks proportional on both desktop and mobile.
+                    // one square = rect.width/8, arrow ~18% of that.
+                    const sqSize = rect.width / 8;
+                    const w = Math.max(4, sqSize * 0.18);
                     if (T.arrowMode === 'highlight') drawHighlight(from, to, rect, col);
                     else if (isKnightMove(from, to)) drawKnightArrow(from, to, rect, col, w);
                     else drawArrowShape(from, to, rect, col, w);
@@ -150,20 +154,33 @@
     // create the full-viewport canvas. only runs once.
     // the canvas is fixed-position and covers the entire window
     // but has pointer-events:none so it doesn't block clicks.
+    //
+    // MOBILE FIX: we scale the canvas by devicePixelRatio so that
+    // getBoundingClientRect() coordinates (CSS pixels) map correctly
+    // to canvas pixels. without this, arrows appear shrunken and
+    // offset on high-DPI screens (phones, retina displays).
     function initCanvas() {
         if (T.canvas) return;
+        const dpr = window.devicePixelRatio || 1;
         T.canvas = document.createElement('canvas');
         T.canvas.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;pointer-events:none;z-index:999998;';
-        T.canvas.width = window.innerWidth; T.canvas.height = window.innerHeight;
+        T.canvas.width = window.innerWidth * dpr;
+        T.canvas.height = window.innerHeight * dpr;
         document.body.appendChild(T.canvas);
         T.ctx = T.canvas.getContext('2d');
+        T.ctx.scale(dpr, dpr);
 
-        // resize handler — debounced to avoid layout thrashing
+        // resize handler — debounced to avoid layout thrashing.
+        // re-applies DPR scaling after each resize since setting
+        // canvas.width resets the context transform.
         let timeout;
         window.addEventListener('resize', () => {
             clearTimeout(timeout);
             timeout = setTimeout(() => {
-                T.canvas.width = window.innerWidth; T.canvas.height = window.innerHeight;
+                const dpr = window.devicePixelRatio || 1;
+                T.canvas.width = window.innerWidth * dpr;
+                T.canvas.height = window.innerHeight * dpr;
+                T.ctx.scale(dpr, dpr);
                 T.boardCache = null; // force rect recalculation
                 if (T.arrows.length) draw(true);
             }, 100);
