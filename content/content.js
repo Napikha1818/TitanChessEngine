@@ -16,9 +16,15 @@
 // monitor() runs every 100ms via setInterval. it:
 //   - reads the current FEN from the DOM
 //   - detects new games (starting position after a non-start)
-//   - clears arrows when it's the opponent's turn
 //   - triggers analysis when the position changes on our turn
 //   - pre-analyzes during opponent's turn if queue mode is on
+//   - clears arrows on opponent's turn
+//   - restores pending arrows when it becomes our turn
+//   - triggers analysis if it's our turn with no arrows
+//
+// monitor() is the SINGLE SOURCE OF TRUTH for arrow visibility.
+// arrows are shown only on our turn, cleared on opponent's turn.
+// don't add turn checks in draw() or showMove() — keep it here.
 //
 // 100ms is a good balance between responsiveness and CPU usage.
 // going lower (50ms) makes it snappier but burns more cycles.
@@ -32,9 +38,8 @@
 // the starting position).
 //
 // on new game: we disconnect the mutation observer, clear all
-// cached board references, and re-run setup() to find the new
-// board element. chess.com sometimes replaces the entire board
-// DOM when starting a new game.
+// cached board references, send `ucinewgame` to reset the hash
+// table, and re-run setup() to find the new board element.
 //
 // === BOOT SEQUENCE ===
 //
@@ -80,8 +85,16 @@
                 T.boardElement = T.boardCache = T.playerColor = T.myTurnColor = null;
                 T.moveQueue = [];
                 T.pendingArrows = [];
+                // reset castling tracking for the new game
+                T.castleWhiteKingMoved = T.castleBlackKingMoved = false;
+                T.castleWhiteRookAMoved = T.castleWhiteRookHMoved = false;
+                T.castleBlackRookAMoved = T.castleBlackRookHMoved = false;
                 W.updateQueueDisplay();
                 D.clearArrows();
+                // reset hash table on new game so stale positions don't pollute results
+                if (T.stockfishWorker && T.engineReady) {
+                    T.stockfishWorker.postMessage('ucinewgame');
+                }
                 setup();
             }
 
@@ -89,26 +102,36 @@
             T.myTurnColor = B.getPlayerColor();
             const isMyTurn = (turn === T.myTurnColor);
 
-            // opponent's turn — clear arrows so they don't linger
+            // position changed — new move was made
+            if (fen !== T.currentFen) {
+                T.previousFen = T.currentFen;
+                T.currentFen = fen;
+                T.pendingArrows = [];
+                D.clearArrows();
+
+                // only analyze on our turn (or pre-analyze in queue mode)
+                if (isMyTurn) {
+                    Eng.analyze(fen);
+                } else if (T.queueMode) {
+                    Eng.preAnalyze(fen);
+                }
+            }
+
+            // opponent's turn — make sure arrows are cleared
             if (!isMyTurn && T.arrows.length > 0) {
                 D.clearArrows();
             }
 
-            // position changed — analyze immediately regardless of turn.
-            // this way the result is ready the instant it becomes our turn.
-            if (fen !== T.currentFen) {
-                T.currentFen = T.previousFen = fen;
-                T.pendingArrows = []; // clear stale pending from previous position
-                D.clearArrows();
-                Eng.analyze(fen);
-            }
-
-            // if it's our turn and we have a pending move from pre-analysis,
-            // make sure the arrow is visible (redraw if needed)
+            // our turn — restore pending arrows if they got cleared
             if (isMyTurn && T.pendingArrows.length > 0 && T.arrows.length === 0) {
                 T.arrows = [...T.pendingArrows];
                 T.forceRedraw = true;
                 D.draw(true);
+            }
+
+            // our turn, no arrows, not analyzing — trigger analysis
+            if (isMyTurn && T.pendingArrows.length === 0 && T.arrows.length === 0 && !T.analyzing) {
+                Eng.analyze(fen);
             }
         } catch (err) {
             console.error('[TitanFree] monitor error', err);

@@ -49,5 +49,16 @@ window.TitanState = {
     combatMode: false,     // deeper analysis, higher depth/skill
     queueMode: false,      // pre-analyze on opponent's turn
     moveQueue: [],          // queued moves when queueMode is on
-    currentMode: 'account'  // 'account' | 'combat' | 'threat'
+    currentMode: 'account', // 'account' | 'combat' | 'threat'
+
+    // castling tracking — set to true once king/rook leaves
+    // starting square during a game. reset on new game detection.
+    // this prevents false castling rights in the FEN when a piece
+    // has moved and returned to its original square.
+    castleWhiteKingMoved: false,
+    castleBlackKingMoved: false,
+    castleWhiteRookAMoved: false,  // a1 rook
+    castleWhiteRookHMoved: false,  // h1 rook
+    castleBlackRookAMoved: false,  // a8 rook
+    castleBlackRookHMoved: false   // h8 rook
 };
